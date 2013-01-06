@@ -1,0 +1,493 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="initial-scale=1.0; maximum-scale=1.0; user-scalable=0;">
+<script type="text/javascript">
+var $ = function(id){
+    return document.getElementById(id);
+};
+var $N = function(name){
+    return document.getElementsByName(name);
+};
+
+var Map = function(obj){
+    this.obj = obj;
+};
+Map.prototype.join = function(separator){
+    var list = [];
+    for (var k in this.obj){
+        list.push(k + separator + this.obj[k]);
+    }
+    return list;
+};
+
+var Template = function(){
+};
+Template.comment = "";
+Template.load = function(id, map){
+    var tmpl = $(id + '_template').value;
+    console.log(map);
+    for (var key in map){
+        var value = map[key];
+        if (key === "url"){
+            tmpl = tmpl.replace('[[url]]', 'http://mediamarker.net/reg?mode=marklet&url=' + value + "&comment=" + Template.comment);
+        }else if (key !== "asin"){
+            tmpl = tmpl.replace('[[' + key + ']]', value);
+        }
+    }
+    return tmpl;
+};
+
+var JSONP = function(){
+};
+JSONP._count = 0;
+JSONP.clear_cache = (function(){
+    JSONP._cache = {};
+})();
+JSONP.prototype.load = function(){
+    var uri = this.uri;
+    var callback_func = this.callback;
+    if (JSONP._cache[uri]){
+        callback_func(JSONP._cache[uri]);
+        return;
+    }
+
+    var callback_name = 'callback' + (JSONP._count++);
+    JSONP[callback_name] = function(res){
+        JSONP._cache[uri] = res;
+        callback_func(res);
+    };
+    var script = document.createElement('script');
+    script.setAttribute('src', uri + 'JSONP.' + callback_name);
+    script.setAttribute('type', 'text/javascript');
+    script.setAttribute('charset', 'utf-8');
+    document.getElementsByTagName('head')[0].appendChild(script);
+};
+
+var Amazon = function(){
+    this.init_paramap = new Map({
+        AWSAccessKeyId : '0DV3KD29JX8P4T5QX7G2',
+        AssociateTag : 'book042-22'
+    });
+};
+Amazon.prototype.item_search = function(category, keywords, page, callback){
+    var paramap = new Map({
+        ItemPage : page,
+        ResponseGroup : 'Small,Images,OfferFull',
+        SearchIndex : category,
+        Keywords : encodeURIComponent(keywords),
+        _render : 'json',
+        _callback : ''
+    });
+    var params = [];
+    params = params.concat(this.init_paramap.join('='));
+    params = params.concat(paramap.join('='));
+
+    var jsonp = new JSONP();
+    jsonp.callback = callback;
+    jsonp.uri = 'http://pipes.yahoo.com/nacookan/awsproxy_itemsearch?' + params.join('&');
+    jsonp.load();
+};
+Amazon.prototype.item_lookup = function(asin, callback){
+    var paramap = new Map({
+        ItemPage : 1,
+        ResponseGroup : 'Large',
+        ItemId : encodeURIComponent(asin),
+        _render : 'json',
+        _callback : ''
+    });
+    var params = [];
+    params = params.concat(this.init_paramap.join('='));
+    params = params.concat(paramap.join('='));
+
+    var jsonp = new JSONP();
+    jsonp.callback = callback;
+    jsonp.uri = 'http://pipes.yahoo.com/nacookan/awsproxy_itemlookup?' + params.join('&');
+    jsonp.load();
+}
+/* ロード時 */
+window.onload = function(){
+    var search_form = new SearchForm();
+    var URLHash = location.hash;
+    var URLQuery = getParameter(location.search);
+    if (URLQuery["comment"]){
+        Template.comment = URLQuery["comment"];
+    }else if ("<@@>".length > 0){
+        Template.comment = "<@@>";
+    }
+    if (URLHash){
+        var preSearchHash = location.hash.split("/");
+        if (preSearchHash.length > 1){
+            search_form.keywords = preSearchHash[1];
+            search_form.category = preSearchHash[0].substring(1);
+            search_form.go();
+            setTimeout(function(){
+                $('search_button').onclick();
+            }, 1000);
+        }
+    }else{
+        search_form.keywords = '';
+        search_form.category = 'Blended';
+        search_form.go();
+    }
+};
+
+var SearchForm = function(){
+};
+SearchForm.prototype.go = function(){
+    location.href = '#';
+    var this_form = this;
+    $('content').innerHTML = Template.load('search', {
+        keywords : this.keywords
+    });
+    var options = $('category_list').options;
+    for (var i = 0; i < options.length; i++){
+        if (options[i].value == this.category){
+            options[i].selected = 'selected';
+        }
+    }
+    $('search_button').onclick = function(){
+        var keywords = this_form.keywords = $('keywords').value;
+        var category = this_form.category = $('category_list').value;
+        var list_form = new ListForm();
+        list_form.category = category;
+        list_form.keywords = keywords;
+        list_form.from = this_form;
+        list_form.go();
+    };
+}
+
+var ListForm = function(){
+}
+ListForm.prototype.go = function(){
+    location.href = '#' + this.category + '/' + encodeURIComponent(this.keywords);
+    var this_form = this;
+    $('content').innerHTML = Template.load('list', {
+        keywords : this_form.keywords
+    });
+    var search_links = $N('search_link');
+    for (var i = 0; i < search_links.length; i++){
+        search_links[i].onclick = function(){
+            this_form.from.go();
+        };
+    }
+    this.load(1);
+};
+ListForm.prototype.load = function(page){
+    var this_form = this;
+    var amazon = new Amazon();
+    amazon.item_search(this.category, this.keywords, page, function(res){
+        var list = res.value.items[0];
+        var items_html = [];
+        if (!list.Items.Item){
+            var node = document.createElement('table');
+            node.innerHTML = Template.load('list_noitem', {});
+            var nodes = node.childNodes;
+            for (var i = 0; i < nodes.length; i++){
+                $('list').appendChild(nodes[i]);
+            }
+            return;
+        }
+        for (var i = 0; i < list.Items.Item.length; i++){
+            var item = list.Items.Item[i];
+            var image = (item.SmallImage ? item.SmallImage.URL : '');
+            var width = (item.SmallImage ? item.SmallImage.Width.content : 0);
+            var height = (item.SmallImage ? item.SmallImage.Height.content : 0);
+            var price = "none";
+            if (typeof item.OfferSummary !== "undefined"){
+                price = (item.OfferSummary.LowestNewPrice ? item.OfferSummary.LowestNewPrice.FormattedPrice : '-');
+            }
+            items_html.push(Template.load('list_item', {
+                image : image,
+                width : (width < height ? width * (50 / height) : 50),
+                height : (height < width ? height * (50 / width) : 50),
+                name : item.ItemAttributes ? item.ItemAttributes.Title : "",
+                price : price.replace(/[￥ ]/, ''),
+                asin : item.ASIN,
+                url : item.DetailPageURL
+            }));
+        }
+        var node = document.createElement('table');
+        node.innerHTML = items_html.join('\n');
+        var nodes = node.childNodes;
+        for (var i = 0; i < nodes.length; i++){
+            $('list').appendChild(nodes[i]);
+        }
+        var links = $N('list_items');
+        for (var i = 0; i < links.length; i++){
+            links[i].onclick = function(){
+                if (!this.detail_node){
+                    var tmpl = Template.load('detail', {
+                        url : this.id
+                    });
+                    var node = document.createElement('table');
+                    node.innerHTML = (tmpl);
+                    this.detail_node = (function(node){
+                        if (node.tagName.toLowerCase() == 'tr'){
+                            return node;
+                        }else{
+                            return arguments.callee(node.childNodes[0]);
+                        }
+                    })(node.childNodes[0]);
+                    this.parentNode.insertBefore(this.detail_node, this.nextSibling);
+                }else{
+                    this.detail_node.style.display = 'none';
+                    this.detail_node = null;
+                }
+            };
+        }
+        if (page < parseInt(list.Items.TotalPages)){
+            $('more').style.display = 'block';
+            $('more').onclick = function(){
+                this_form.load(page + 1);
+            };
+        }else{
+            $('more').style.display = 'none';
+        }
+    });
+};
+
+function getParameter(str){
+    var dec = decodeURIComponent;
+    var par = new Array, itm;
+    if (typeof(str) == 'undefined') return par;
+    if (str.indexOf('?', 0) > -1) str = str.split('?')[1];
+    str = str.split('&');
+    for (var i = 0; str.length > i; i++){
+        itm = str[i].split("=");
+        if (itm[0] != ''){
+            par[itm[0]] = typeof(itm[1]) == 'undefined' ? true : dec(itm[1]);
+        }
+    }
+    return par;
+}
+function setParameter(par){
+    var enc = encodeURIComponent;
+    var str = '', amp = '';
+    if (!par) return '';
+    for (var i in par){
+        str = str + amp + i + "=" + enc(par[i]);
+        amp = '&'
+    }
+    return str;
+}
+</script>
+<style type="text/css">
+    div#templates {
+        display: none;
+    }
+
+    body {
+        margin: 0;
+        padding: 0;
+        font-family: sans-serif;
+    }
+
+    h1 {
+        margin: 0;
+        padding: 0.4em 0.1em 0.4em 0.1em;
+        font-weight: normal;
+        font-size: 120%;
+        text-align: center;
+        background: #8195ae;
+        border-top: solid 1px #cdd6df;
+        border-bottom: solid 1px #2e3643;
+        color: #ffffff;
+    }
+
+    form.searchform {
+        margin: 0;
+        padding: 0;
+        text-align: center;
+        background: #bcbcbc;
+        border-top: solid 1px #f0f0f0;
+        border-bottom: solid 1px #707070;
+        color: #ffffff;
+    }
+
+    form.searchform p {
+        margin: 0;
+        padding: 0;
+    }
+
+    form.searchform p input#keywords {
+        width: 90%;
+        font-size: 100%;
+    }
+
+    form.searchform p select#category_list {
+        font-size: 100%;
+    }
+
+    form.searchform p input#search_button {
+        font-size: 100%;
+    }
+
+    table.list {
+        margin: 0;
+        padding: 0;
+        border-collapse: collapse;
+        width: 100%;
+    }
+
+    table.list tr td {
+        margin: 0;
+        padding: 0.5em 0.2em 0.5em 0.2em;
+        border-bottom: solid 1px #cccccc;
+        height: 55px;
+    }
+
+    table.list tr td.iframe {
+        margin: 0;
+        padding: 0;
+        height: auto;
+        border-left: solid 12px #cccccc;
+    }
+
+    table.list tr td.iframe iframe {
+        margin: 0;
+        padding: 0;
+        width: 100%;
+        border: none;
+    }
+
+    table.list tr td.image {
+        text-align: center;
+    }
+
+    table.list tr td.description {
+    }
+
+    table.list tr td.price {
+        color: #f00000;
+        text-align: right;
+    }
+
+    p#more {
+        display: none;
+        margin: 0;
+        padding: 0.5em;
+        text-align: center;
+        background: #e8e8e8;
+        border-top: solid 1px #f0f0f0;
+    }
+
+    p.navigation {
+        margin: 0;
+        padding: 0.5em;
+        background: #bcbcbc;
+        border-top: solid 1px #f0f0f0;
+        border-bottom: solid 1px #707070;
+        color: #ffffff;
+    }
+
+    p.navigation a {
+        margin: 0.2em;
+        padding: 0.2em;
+        background: #878787;
+        border: solid 1px #707070;
+        color: #ffffff;
+        text-decoration: none;
+    }
+
+    address {
+        margin: 290px 0 0 0;
+        padding: 0;
+        text-align: center;
+        font-style: normal;
+        background: #bcbcbc;
+        border-top: solid 1px #ffffff;
+        border-bottom: solid 1px #707070;
+        color: #ffffff;
+    }
+
+    address a {
+        color: #ffffff;
+    }
+</style>
+<title>Amazon検索+メディアマーカー</title>
+</head>
+<body data-feedly-processed="yes" highlighting="false">
+<div id="content"><h1>Amazon 検索</h1>
+
+    <form action="javascript:void(0);" class="searchform">
+        <p>
+            <input id="keywords" type="text"><br>
+            <select id="category_list">
+                <option selected="selected" value="Blended">すべての商品</option>
+                <option value="Books">本</option>
+                <option value="Music">音楽</option>
+                <option value="Video">ビデオ</option>
+                <option value="VideoGames">ゲーム</option>
+                <option value="Electronics">エレクトロニクス</option>
+                <option value="Softwares">ソフトウェア</option>
+                <option value="Kitchen">キッチン</option>
+                <option value="Toys">おもちゃ</option>
+            </select>
+            <input id="search_button" value="検索" type="submit">
+        </p>
+    </form>
+    <address>Copyright© 2008 <a href="http://d.hatena.ne.jp/nacookan/20080721/1216660685">id:nacookan</a></address>
+</div>
+<div id="templates">
+
+    <textarea id="search_template">&lt;h1&gt;Amazon
+        検索&lt;/h1&gt;
+        &lt;form action="javascript:void(0);" class="searchform"&gt; &lt;p&gt;
+        &lt;input type="text" id="keywords" value="[[keywords]]" /&gt;&lt;br
+        /&gt; &lt;select id="category_list"&gt; &lt;option
+        value="Blended"&gt;すべての商品&lt;/option&gt; &lt;option
+        value="Books"&gt;本&lt;/option&gt; &lt;option
+        value="Music"&gt;音楽&lt;/option&gt; &lt;option
+        value="Video"&gt;ビデオ&lt;/option&gt; &lt;option
+        value="VideoGames"&gt;ゲーム&lt;/option&gt; &lt;option
+        value="Electronics"&gt;エレクトロニクス&lt;/option&gt; &lt;option
+        value="Softwares"&gt;ソフトウェア&lt;/option&gt; &lt;option
+        value="Kitchen"&gt;キッチン&lt;/option&gt; &lt;option
+        value="Toys"&gt;おもちゃ&lt;/option&gt; &lt;/select&gt; &lt;input
+        type="submit" id="search_button" value="検索" /&gt; &lt;/p&gt;
+        &lt;/form&gt;
+        &lt;address&gt;Copyright© 2008 &lt;a
+        href="http://d.hatena.ne.jp/nacookan/20080721/1216660685"&gt;id:nacookan&lt;/a&gt;&lt;/address&gt;
+    </textarea>
+
+    <textarea id="list_template">&lt;h1&gt;[[keywords]]
+        - Amazon 検索&lt;/h1&gt;
+        &lt;p class="navigation"&gt;
+        &lt;a href="javascript:void(0);" name="search_link"&gt;&lt; 検索&lt;/a&gt;
+        &lt;/p&gt;
+        &lt;table class="list" id="list"&gt;
+        &lt;/table&gt;
+        &lt;p id="more"&gt;
+        もっと見る
+        &lt;/p&gt;
+        &lt;p class="navigation"&gt;
+        &lt;a href="javascript:void(0);" name="search_link"&gt;&lt; 検索&lt;/a&gt;
+        &lt;/p&gt;
+    </textarea>
+
+    <textarea id="list_item_template">&lt;tr
+        name="list_items" id="[[url]]"&gt;
+        &lt;td class="image"&gt;&lt;img src="[[image]]" alt="" width="[[width]]" height="[[height]]" /&gt;&lt;/td&gt;
+        &lt;td class="description"&gt;[[name]]&lt;/td&gt;
+        &lt;td class="price"&gt;[[price]]&lt;/td&gt;
+        &lt;/tr&gt;
+    </textarea>
+
+    <textarea id="list_noitem_template">&lt;tr
+        name="list_items"&gt;
+        &lt;td&gt;見つかりません。&lt;/td&gt;
+        &lt;/tr&gt;
+    </textarea>
+
+    <textarea id="detail_template">&lt;tr&gt;
+        &lt;td class="iframe" colspan="3"&gt;
+        &lt;iframe src="[[url]]" /&gt;
+        &lt;/td&gt;
+        &lt;/tr&gt;
+    </textarea>
+
+</div>
+</body>
+</html>
