@@ -216,7 +216,7 @@ ListForm.prototype.load = function(page){
         var links = $N('list_items');
         for (var i = 0; i < links.length; i++){
             links[i].onclick = function(){
-                location.href = "openURL:" + openURL;
+                location.href = this.id.replace(/http/, "googlechrome");
                 //                if (!this.detail_node){
                 //                    var tmpl = Template.load('detail', {
                 //                        url : this.id
