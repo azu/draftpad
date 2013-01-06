@@ -216,24 +216,25 @@ ListForm.prototype.load = function(page){
         var links = $N('list_items');
         for (var i = 0; i < links.length; i++){
             links[i].onclick = function(){
-                if (!this.detail_node){
-                    var tmpl = Template.load('detail', {
-                        url : this.id
-                    });
-                    var node = document.createElement('table');
-                    node.innerHTML = (tmpl);
-                    this.detail_node = (function(node){
-                        if (node.tagName.toLowerCase() == 'tr'){
-                            return node;
-                        }else{
-                            return arguments.callee(node.childNodes[0]);
-                        }
-                    })(node.childNodes[0]);
-                    this.parentNode.insertBefore(this.detail_node, this.nextSibling);
-                }else{
-                    this.detail_node.style.display = 'none';
-                    this.detail_node = null;
-                }
+                location.href = "openURL:" + openURL;
+                //                if (!this.detail_node){
+                //                    var tmpl = Template.load('detail', {
+                //                        url : this.id
+                //                    });
+                //                    var node = document.createElement('table');
+                //                    node.innerHTML = (tmpl);
+                //                    this.detail_node = (function(node){
+                //                        if (node.tagName.toLowerCase() == 'tr'){
+                //                            return node;
+                //                        }else{
+                //                            return arguments.callee(node.childNodes[0]);
+                //                        }
+                //                    })(node.childNodes[0]);
+                //                    this.parentNode.insertBefore(this.detail_node, this.nextSibling);
+                //                }else{
+                //                    this.detail_node.style.display = 'none';
+                //                    this.detail_node = null;
+                //                }
             };
         }
         if (page < parseInt(list.Items.TotalPages)){
