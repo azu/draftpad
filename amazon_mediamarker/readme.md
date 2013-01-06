@@ -5,6 +5,8 @@ Draftpadの[Assist](http://modelessdesign.com/draftpad/assisthelp/ "Assist").
 
 * http://azu.github.com/draftpad/amazon_mediamarker/?comment=<@@>
 
+クエリのcommentに渡した値はメディアマーカー登録時のコメントに入力された状態になります。
+
 ## dependence
 
 * Google Chrome.app (Draftpadのブラウザ内からSafariを開く方法がよく分からなかった)
