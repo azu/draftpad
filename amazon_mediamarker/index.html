@@ -31,7 +31,7 @@ Template.load = function(id, map){
     for (var key in map){
         var value = map[key];
         if (key === "url"){
-            tmpl = tmpl.replace('[[url]]', 'http://mediamarker.net/reg?mode=marklet&url=' + value + "&comment=" + Template.comment);
+            tmpl = tmpl.replace('[[url]]', 'http://mediamarker.net/reg?mode=marklet&url=' + value + "&comment=" + encodeURIComponent(Template.comment));
         }else if (key !== "asin"){
             tmpl = tmpl.replace('[[' + key + ']]', value);
         }
