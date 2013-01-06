@@ -3,6 +3,8 @@
 Amazon検索した結果から選んでメディアマーカーの登録画面へ遷移する
 Draftpadの[Assist](http://modelessdesign.com/draftpad/assisthelp/ "Assist").
 
+* http://azu.github.com/draftpad/amazon_mediamarker/?comment=<@@>
+
 ## dependence
 
 * Google Chrome.app (Draftpadのブラウザ内からSafariを開く方法がよく分からなかった)
