@@ -27,7 +27,6 @@ var Template = function(){
 Template.comment = "";
 Template.load = function(id, map){
     var tmpl = $(id + '_template').value;
-    console.log(map);
     for (var key in map){
         var value = map[key];
         if (key === "url"){
