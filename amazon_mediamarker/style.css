@@ -1,0 +1,131 @@
+div#templates {
+    display: none;
+}
+
+body {
+    margin: 0;
+    padding: 0;
+    font-family: sans-serif;
+}
+
+h1 {
+    margin: 0;
+    padding: 0.4em 0.1em 0.4em 0.1em;
+    font-weight: normal;
+    font-size: 120%;
+    text-align: center;
+    background: #8195ae;
+    border-top: solid 1px #cdd6df;
+    border-bottom: solid 1px #2e3643;
+    color: #ffffff;
+}
+
+form.searchform {
+    margin: 0;
+    padding: 0;
+    text-align: center;
+    background: #bcbcbc;
+    border-top: solid 1px #f0f0f0;
+    border-bottom: solid 1px #707070;
+    color: #ffffff;
+}
+
+form.searchform p {
+    margin: 0;
+    padding: 0;
+}
+
+form.searchform p input#keywords {
+    width: 90%;
+    font-size: 100%;
+}
+
+form.searchform p select#category_list {
+    font-size: 100%;
+}
+
+form.searchform p input#search_button {
+    font-size: 100%;
+}
+
+table.list {
+    margin: 0;
+    padding: 0;
+    border-collapse: collapse;
+    width: 100%;
+}
+
+table.list tr td {
+    margin: 0;
+    padding: 0.5em 0.2em 0.5em 0.2em;
+    border-bottom: solid 1px #cccccc;
+    height: 55px;
+}
+
+table.list tr td.iframe {
+    margin: 0;
+    padding: 0;
+    height: auto;
+    border-left: solid 12px #cccccc;
+}
+
+table.list tr td.iframe iframe {
+    margin: 0;
+    padding: 0;
+    width: 100%;
+    border: none;
+}
+
+table.list tr td.image {
+    text-align: center;
+}
+
+table.list tr td.description {
+}
+
+table.list tr td.price {
+    color: #f00000;
+    text-align: right;
+}
+
+p#more {
+    display: none;
+    margin: 0;
+    padding: 0.5em;
+    text-align: center;
+    background: #e8e8e8;
+    border-top: solid 1px #f0f0f0;
+}
+
+p.navigation {
+    margin: 0;
+    padding: 0.5em;
+    background: #bcbcbc;
+    border-top: solid 1px #f0f0f0;
+    border-bottom: solid 1px #707070;
+    color: #ffffff;
+}
+
+p.navigation a {
+    margin: 0.2em;
+    padding: 0.2em;
+    background: #878787;
+    border: solid 1px #707070;
+    color: #ffffff;
+    text-decoration: none;
+}
+
+address {
+    margin: 290px 0 0 0;
+    padding: 0;
+    text-align: center;
+    font-style: normal;
+    background: #bcbcbc;
+    border-top: solid 1px #ffffff;
+    border-bottom: solid 1px #707070;
+    color: #ffffff;
+}
+
+address a {
+    color: #ffffff;
+}
