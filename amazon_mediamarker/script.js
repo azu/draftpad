@@ -69,7 +69,7 @@ Amazon.prototype.item_search = function (category, keywords, page, callback){
         ItemPage: page,
         ResponseGroup: 'Small,Images,OfferFull',
         SearchIndex: category,
-        Keywords: encodeURIComponent(keywords),
+        Keywords: encodeURIComponent(keywords.trim()),
         _render: 'json',
         _callback: ''
     });
@@ -183,7 +183,7 @@ ListForm.prototype.load = function (page){
     amazon.item_search(this.category, this.keywords, page, function (res){
         var list = res.value.items[0];
         var items_html = [];
-        if (!list.Items.Item) {
+        if (!list.Items || !list.Items.Item) {
             var node = document.createElement('table');
             node.innerHTML = Template.load('list_noitem', {});
             var nodes = node.childNodes;
